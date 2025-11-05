@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/idguardapp/static/css/main.30305328.css",
+    "main.js": "/idguardapp/static/js/main.87d9057b.js",
+    "static/js/453.6bc2661e.chunk.js": "/idguardapp/static/js/453.6bc2661e.chunk.js",
+    "index.html": "/idguardapp/index.html",
+    "main.30305328.css.map": "/idguardapp/static/css/main.30305328.css.map",
+    "main.87d9057b.js.map": "/idguardapp/static/js/main.87d9057b.js.map",
+    "453.6bc2661e.chunk.js.map": "/idguardapp/static/js/453.6bc2661e.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.30305328.css",
+    "static/js/main.87d9057b.js"
+  ]
+}
