@@ -1,38 +1,35 @@
-.App {
-  text-align: center;
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #f9fafb;
+  margin: 0;
+  padding: 0;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
+/* Responsive tweaks */
+@media (max-width: 640px) {
+  h2 {
+    font-size: 1.5rem;
+  }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+  table {
+    font-size: 0.9rem;
+  }
+
+  .sos-tab-container {
+    padding: 1rem;
   }
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+/* SOS Alert glow */
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 12px #ff5555;
+  }
+  100% {
+    box-shadow: none;
+  }
 }
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.bg-red-50 {
+  animation: glow 2s ease-in-out;
 }
