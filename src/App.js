@@ -13,10 +13,10 @@ import {
 
 /**
  * FINAL App.js
- * LIVE FETCH from Blynk:
- * V2 = RFID
- * V3 = Location
- * V4 = SOS alert
+ * LIVE FETCH from Blynk Cloud:
+ *  V2 = RFID
+ *  V3 = Location
+ *  V4 = SOS
  */
 
 export default function IDGuardWebsite() {
@@ -49,19 +49,20 @@ export default function IDGuardWebsite() {
     setAttendanceRecords([]);
   }, []);
 
-  // ---------------------------
-  // Fetch Attendance from V2 + V3
-  // ---------------------------
+  // ------------------------------------------------------
+  // FETCH ATTENDANCE = V2 (RFID) + V3 (GPS)
+  // ------------------------------------------------------
   const fetchAttendance = async () => {
     setAttLoading(true);
     setAttError(null);
 
     try {
+      // Correct API format → &pin=V2 !!!
       const rfidRes = await fetch(
-        `https://blynk.cloud/external/api/get?token=${TOKEN}&V2`
+        `https://blynk.cloud/external/api/get?token=${TOKEN}&pin=V2`
       );
       const locRes = await fetch(
-        `https://blynk.cloud/external/api/get?token=${TOKEN}&V3`
+        `https://blynk.cloud/external/api/get?token=${TOKEN}&pin=V3`
       );
 
       const rfid = await rfidRes.text();
@@ -69,6 +70,7 @@ export default function IDGuardWebsite() {
 
       let lat = "—",
         lng = "—";
+
       if (loc.includes(",")) {
         const p = loc.split(",");
         lat = p[0];
@@ -80,10 +82,7 @@ export default function IDGuardWebsite() {
         uid: rfid || "—",
         name: "Student",
         date: new Date().toLocaleDateString(),
-        time: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         latitude: lat,
         longitude: lng,
         status: rfid ? "Present" : "—",
@@ -99,20 +98,21 @@ export default function IDGuardWebsite() {
   };
 
   useEffect(() => {
-    fetchAttendance();
+    fetchAttendance(); // auto-fetch once
   }, []);
 
-  // ---------------------------
-  // Fetch SOS from V4 (ONLY when ESP sends)
-  // ---------------------------
+  // ------------------------------------------------------
+  // FETCH SOS = V4 (ONLY when ESP sends)
+  // ------------------------------------------------------
   const fetchSOS = async () => {
     try {
       const sosRes = await fetch(
-        `https://blynk.cloud/external/api/get?token=${TOKEN}&V4`
+        `https://blynk.cloud/external/api/get?token=${TOKEN}&pin=V4`
       );
 
       const sosText = await sosRes.text();
 
+      // If empty → means no SOS sent yet
       if (!sosText || sosText === "null" || sosText.trim() === "") return;
 
       let coordinates = "—";
@@ -133,6 +133,7 @@ export default function IDGuardWebsite() {
       };
 
       setSosAlerts((prev) => [newAlert, ...prev]);
+
       setShowNotification(true);
       setTimeout(() => setShowNotification(false), 4000);
     } catch (e) {
@@ -140,21 +141,20 @@ export default function IDGuardWebsite() {
     }
   };
 
-  // Fetch SOS when user opens SOS tab
+  // Fetch SOS only when user switches to SOS tab
   useEffect(() => {
-    if (activeTab === "sos") {
-      fetchSOS();
-    }
+    if (activeTab === "sos") fetchSOS();
   }, [activeTab]);
 
-  // ---------------------------
-  // Track Me Live
-  // ---------------------------
+  // ------------------------------------------------------
+  // TRACK ME LIVE BUTTON
+  // ------------------------------------------------------
   const trackMeLive = () => {
     if (!navigator.geolocation) {
       setLocationError("Geolocation not supported.");
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
@@ -165,9 +165,9 @@ export default function IDGuardWebsite() {
     );
   };
 
-  // ---------------------------
-  // SOS local simulation
-  // ---------------------------
+  // ------------------------------------------------------
+  // SOS SIMULATION (UI ONLY)
+  // ------------------------------------------------------
   const simulateSOSAlert = () => {
     const alert = {
       id: Date.now(),
@@ -176,15 +176,17 @@ export default function IDGuardWebsite() {
       location: "Simulated GPS",
       coordinates: "18.52, 73.85",
     };
+
     setSosAlerts((p) => [alert, ...p]);
     setActiveTab("sos");
+
     setShowNotification(true);
     setTimeout(() => setShowNotification(false), 4000);
   };
 
-  // ---------------------------
-  // Emergency Contact Handlers
-  // ---------------------------
+  // ------------------------------------------------------
+  // EMERGENCY CONTACT HANDLERS
+  // ------------------------------------------------------
   const handleAddContact = () => {
     if (newContact.name && newContact.phone) {
       const c = { id: Date.now(), ...newContact };
@@ -198,11 +200,13 @@ export default function IDGuardWebsite() {
     setEmergencyContacts((p) => p.filter((c) => c.id !== id));
   };
 
-  // ---------------------------
-  // UI BELOW (UNCHANGED)
-  // ---------------------------
+  // ------------------------------------------------------
+  // UI STARTS HERE (UNCHANGED)
+  // ------------------------------------------------------
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+
       {showNotification && (
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-4 rounded-lg shadow-2xl animate-pulse flex items-center space-x-3">
           <AlertTriangle className="w-6 h-6" />
@@ -213,7 +217,7 @@ export default function IDGuardWebsite() {
         </div>
       )}
 
-      {/* ------------ HEADER ------------- */}
+      {/* HEADER */}
       <header className="bg-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
@@ -246,7 +250,7 @@ export default function IDGuardWebsite() {
         </div>
       </header>
 
-      {/* ------------ NAVIGATION ------------- */}
+      {/* NAVIGATION */}
       <nav className="bg-white shadow-sm border-b overflow-x-auto">
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex sm:justify-center space-x-1 min-w-max">
@@ -273,8 +277,9 @@ export default function IDGuardWebsite() {
         </div>
       </nav>
 
-      {/* ------------ MAIN CONTENT ------------- */}
+      {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-8">
+
         {/* HOME */}
         {activeTab === "home" && (
           <div className="space-y-8">
@@ -326,15 +331,11 @@ export default function IDGuardWebsite() {
 
             {showContactForm && (
               <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-blue-200">
-                <h3 className="text-xl font-bold mb-4">
-                  Add New Emergency Contact
-                </h3>
+                <h3 className="text-xl font-bold mb-4">Add New Emergency Contact</h3>
                 <div className="space-y-4">
                   {["name", "phone", "relation"].map((field) => (
                     <div key={field}>
-                      <label className="block text-sm font-medium mb-1 capitalize">
-                        {field}
-                      </label>
+                      <label className="block text-sm font-medium mb-1 capitalize">{field}</label>
                       <input
                         type="text"
                         value={newContact[field]}
@@ -403,13 +404,11 @@ export default function IDGuardWebsite() {
           </div>
         )}
 
-        {/* SOS */}
+        {/* SOS TAB */}
         {activeTab === "sos" && (
           <div className="sos-tab-container p-4 space-y-4">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Active SOS Alerts
-              </h2>
+              <h2 className="text-2xl font-bold text-gray-800">Active SOS Alerts</h2>
 
               <div className="flex items-center space-x-3">
                 <button
@@ -430,23 +429,17 @@ export default function IDGuardWebsite() {
               </div>
             </div>
 
-            {locationError && (
-              <p className="text-red-600">{locationError}</p>
-            )}
+            {locationError && <p className="text-red-600">{locationError}</p>}
 
             {sosAlerts.length === 0 ? (
-              <p className="text-center text-gray-500">
-                No active SOS alerts yet.
-              </p>
+              <p className="text-center text-gray-500">No active SOS alerts yet.</p>
             ) : (
               <div className="space-y-4">
                 {sosAlerts.map((alert, index) => (
                   <div
                     key={alert.id}
                     className={`p-4 rounded-xl shadow-md border border-gray-300 ${
-                      index === 0
-                        ? "bg-red-50 border-red-400"
-                        : "bg-white"
+                      index === 0 ? "bg-red-50 border-red-400" : "bg-white"
                     }`}
                   >
                     <h3 className="text-lg font-semibold text-red-600">
@@ -464,12 +457,12 @@ export default function IDGuardWebsite() {
 
                     <button
                       className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md text-sm"
-                      onClick={() => {
+                      onClick={() =>
                         window.open(
                           `https://www.google.com/maps?q=${alert.coordinates}`,
                           "_blank"
-                        );
-                      }}
+                        )
+                      }
                     >
                       🗺 Track on Map
                     </button>
@@ -480,13 +473,11 @@ export default function IDGuardWebsite() {
           </div>
         )}
 
-        {/* ATTENDANCE */}
+        {/* ATTENDANCE TAB */}
         {activeTab === "attendance" && (
           <div className="space-y-6 overflow-x-auto">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
-              <h2 className="text-3xl font-bold text-gray-800">
-                Attendance Records
-              </h2>
+              <h2 className="text-3xl font-bold text-gray-800">Attendance Records</h2>
 
               <div className="bg-white rounded-lg px-4 py-2 shadow">
                 <p className="text-sm text-gray-500">Total Present</p>
@@ -500,9 +491,7 @@ export default function IDGuardWebsite() {
               <table className="w-full min-w-[700px]">
                 <thead className="bg-gradient-to-r from-blue-600 to-purple-600 text-white">
                   <tr>
-                    <th className="px-6 py-4 text-left">
-                      UID / Name
-                    </th>
+                    <th className="px-6 py-4 text-left">UID / Name</th>
                     <th className="px-6 py-4 text-left">Date</th>
                     <th className="px-6 py-4 text-left">Time</th>
                     <th className="px-6 py-4 text-left">Lat</th>
@@ -514,10 +503,7 @@ export default function IDGuardWebsite() {
                 <tbody>
                   {attLoading && (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                         Loading attendance...
                       </td>
                     </tr>
@@ -525,58 +511,40 @@ export default function IDGuardWebsite() {
 
                   {attError && (
                     <tr>
-                      <td
-                        colSpan={6}
-                        className="px-6 py-8 text-center text-red-600"
-                      >
+                      <td colSpan={6} className="px-6 py-8 text-center text-red-600">
                         Error: {attError}
                       </td>
                     </tr>
                   )}
 
-                  {!attLoading &&
-                    !attError &&
-                    attendanceRecords.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          className="px-6 py-8 text-center text-gray-500"
-                        >
-                          No attendance records.
-                        </td>
-                      </tr>
-                    )}
+                  {!attLoading && !attError && attendanceRecords.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                        No attendance records.
+                      </td>
+                    </tr>
+                  )}
 
                   {!attLoading &&
                     attendanceRecords.map((record, index) => (
                       <tr
                         key={record.id}
-                        className={
-                          index % 2 === 0 ? "bg-gray-50" : "bg-white"
-                        }
+                        className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
                       >
                         <td className="px-6 py-4 font-medium">
-                          <div className="text-sm text-gray-700">
-                            {record.uid}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {record.name}
-                          </div>
+                          <div className="text-sm text-gray-700">{record.uid}</div>
+                          <div className="text-xs text-gray-500">{record.name}</div>
                         </td>
 
                         <td className="px-6 py-4">{record.date}</td>
                         <td className="px-6 py-4">{record.time}</td>
 
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-700">
-                            {record.latitude}
-                          </div>
+                          <div className="text-sm text-gray-700">{record.latitude}</div>
                         </td>
 
                         <td className="px-6 py-4">
-                          <div className="text-sm text-gray-700">
-                            {record.longitude}
-                          </div>
+                          <div className="text-sm text-gray-700">{record.longitude}</div>
                         </td>
 
                         <td className="px-6 py-4">
@@ -605,11 +573,11 @@ export default function IDGuardWebsite() {
               </button>
 
               <button
-                onClick={() => {
+                onClick={() =>
                   alert(
                     "Live data comes from Blynk Cloud.\nV2 = RFID\nV3 = Location\nV4 = SOS alert"
-                  );
-                }}
+                  )
+                }
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg"
               >
                 How data arrives
@@ -619,7 +587,7 @@ export default function IDGuardWebsite() {
         )}
       </main>
 
-      {/* ------------ FOOTER ------------- */}
+      {/* FOOTER */}
       <footer className="bg-gray-800 text-white mt-16 py-8">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
