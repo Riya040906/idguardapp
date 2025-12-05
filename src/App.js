@@ -12,8 +12,11 @@ import {
 } from "lucide-react";
 
 /**
- * App.js - ID Guard (final version)
- * NOW FETCHES LIVE DATA FROM BLYNK CLOUD
+ * FINAL App.js
+ * LIVE FETCH from Blynk:
+ * V2 = RFID
+ * V3 = Location
+ * V4 = SOS alert
  */
 
 export default function IDGuardWebsite() {
@@ -31,14 +34,12 @@ export default function IDGuardWebsite() {
     relation: "",
   });
 
-  // attendance fetch state
   const [attLoading, setAttLoading] = useState(false);
   const [attError, setAttError] = useState(null);
-
-  // small location error state for track-me-live actions
   const [locationError, setLocationError] = useState(null);
 
-  // Demo seed (contacts + optional example attendance)
+  const TOKEN = "lvThIBPsnFcLoZsiiyGL1L9ZGGX7vy8B";
+
   useEffect(() => {
     setEmergencyContacts([
       { id: 1, name: "Mom", phone: "+91 98765 43210", relation: "Mother" },
@@ -48,18 +49,14 @@ export default function IDGuardWebsite() {
     setAttendanceRecords([]);
   }, []);
 
-  // -------------------------
-  // UPDATED fetchAttendance() — LIVE BLYNK DATA
-  // -------------------------
+  // ---------------------------
+  // Fetch Attendance from V2 + V3
+  // ---------------------------
   const fetchAttendance = async () => {
     setAttLoading(true);
     setAttError(null);
 
     try {
-      const TOKEN = "lvThIBPsnFcLoZsiiyGL1L9ZGGX7vy8B";
-
-      // Fetch V2 = RFID
-      // Fetch V3 = Location
       const rfidRes = await fetch(
         `https://blynk.cloud/external/api/get?token=${TOKEN}&V2`
       );
@@ -73,12 +70,12 @@ export default function IDGuardWebsite() {
       let lat = "—",
         lng = "—";
       if (loc.includes(",")) {
-        const parts = loc.split(",");
-        lat = parts[0];
-        lng = parts[1];
+        const p = loc.split(",");
+        lat = p[0];
+        lng = p[1];
       }
 
-      const newRecord = {
+      const record = {
         id: Date.now(),
         uid: rfid || "—",
         name: "Student",
@@ -90,66 +87,108 @@ export default function IDGuardWebsite() {
         latitude: lat,
         longitude: lng,
         status: rfid ? "Present" : "—",
-        location: "GPS",
       };
 
-      setAttendanceRecords([newRecord]);
+      setAttendanceRecords([record]);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error("Attendance fetch error:", err);
       setAttError("Unable to fetch from Blynk Cloud");
     } finally {
       setAttLoading(false);
     }
   };
 
-  // fetch once on mount — optional
   useEffect(() => {
     fetchAttendance();
   }, []);
 
-  // -------------------------
+  // ---------------------------
+  // Fetch SOS from V4 (ONLY when ESP sends)
+  // ---------------------------
+  const fetchSOS = async () => {
+    try {
+      const sosRes = await fetch(
+        `https://blynk.cloud/external/api/get?token=${TOKEN}&V4`
+      );
+
+      const sosText = await sosRes.text();
+
+      if (!sosText || sosText === "null" || sosText.trim() === "") return;
+
+      let coordinates = "—";
+      let location = "SOS Alert";
+
+      if (sosText.includes(":")) {
+        const parts = sosText.split(":");
+        coordinates = parts[1].trim();
+        location = "Captured GPS";
+      }
+
+      const newAlert = {
+        id: Date.now(),
+        name: "Student",
+        time: new Date().toLocaleString(),
+        location,
+        coordinates,
+      };
+
+      setSosAlerts((prev) => [newAlert, ...prev]);
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 4000);
+    } catch (e) {
+      console.log("SOS fetch error", e);
+    }
+  };
+
+  // Fetch SOS when user opens SOS tab
+  useEffect(() => {
+    if (activeTab === "sos") {
+      fetchSOS();
+    }
+  }, [activeTab]);
+
+  // ---------------------------
   // Track Me Live
-  // -------------------------
+  // ---------------------------
   const trackMeLive = () => {
     if (!navigator.geolocation) {
       setLocationError("Geolocation not supported.");
       return;
     }
-    setLocationError(null);
-
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         window.open(`https://www.google.com/maps?q=${lat},${lon}`, "_blank");
       },
-      () => {
-        setLocationError("Permission denied or GPS unavailable.");
-      }
+      () => setLocationError("Permission denied or GPS unavailable.")
     );
   };
 
-  // SOS simulation (UI only)
+  // ---------------------------
+  // SOS local simulation
+  // ---------------------------
   const simulateSOSAlert = () => {
-    const newAlert = {
+    const alert = {
       id: Date.now(),
       name: "John Doe",
       time: new Date().toLocaleString(),
-      location: "Live GPS",
+      location: "Simulated GPS",
       coordinates: "18.52, 73.85",
     };
-
-    setSosAlerts((p) => [newAlert, ...p]);
+    setSosAlerts((p) => [alert, ...p]);
     setActiveTab("sos");
     setShowNotification(true);
     setTimeout(() => setShowNotification(false), 4000);
   };
 
-  // Emergency Contacts
+  // ---------------------------
+  // Emergency Contact Handlers
+  // ---------------------------
   const handleAddContact = () => {
     if (newContact.name && newContact.phone) {
-      const contact = { id: Date.now(), ...newContact };
-      setEmergencyContacts((p) => [contact, ...p]);
+      const c = { id: Date.now(), ...newContact };
+      setEmergencyContacts((p) => [c, ...p]);
       setNewContact({ name: "", phone: "", relation: "" });
       setShowContactForm(false);
     }
@@ -159,23 +198,22 @@ export default function IDGuardWebsite() {
     setEmergencyContacts((p) => p.filter((c) => c.id !== id));
   };
 
-  // -------------------------
-  // UI
-  // -------------------------
+  // ---------------------------
+  // UI BELOW (UNCHANGED)
+  // ---------------------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Notification */}
       {showNotification && (
         <div className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-4 rounded-lg shadow-2xl animate-pulse flex items-center space-x-3">
           <AlertTriangle className="w-6 h-6" />
           <div>
-            <p className="font-bold">🚨 SOS ALERT SENT!</p>
+            <p className="font-bold">🚨 SOS ALERT RECEIVED!</p>
             <p className="text-sm">Emergency contacts notified</p>
           </div>
         </div>
       )}
 
-      {/* Header */}
+      {/* ------------ HEADER ------------- */}
       <header className="bg-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-3">
@@ -208,7 +246,7 @@ export default function IDGuardWebsite() {
         </div>
       </header>
 
-      {/* Navigation */}
+      {/* ------------ NAVIGATION ------------- */}
       <nav className="bg-white shadow-sm border-b overflow-x-auto">
         <div className="max-w-7xl mx-auto px-2 sm:px-4">
           <div className="flex sm:justify-center space-x-1 min-w-max">
@@ -235,7 +273,7 @@ export default function IDGuardWebsite() {
         </div>
       </nav>
 
-      {/* Main Content */}
+      {/* ------------ MAIN CONTENT ------------- */}
       <main className="max-w-7xl mx-auto px-3 sm:px-4 py-8">
         {/* HOME */}
         {activeTab === "home" && (
@@ -251,7 +289,6 @@ export default function IDGuardWebsite() {
                   </p>
                 </div>
 
-                {/* Track Me Live - Home */}
                 <div className="mt-4 sm:mt-0">
                   <button
                     onClick={trackMeLive}
@@ -293,8 +330,8 @@ export default function IDGuardWebsite() {
                   Add New Emergency Contact
                 </h3>
                 <div className="space-y-4">
-                  {["name", "phone", "relation"].map((field, i) => (
-                    <div key={i}>
+                  {["name", "phone", "relation"].map((field) => (
+                    <div key={field}>
                       <label className="block text-sm font-medium mb-1 capitalize">
                         {field}
                       </label>
@@ -332,9 +369,9 @@ export default function IDGuardWebsite() {
             )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {emergencyContacts.map((contact) => (
+              {emergencyContacts.map((c) => (
                 <div
-                  key={contact.id}
+                  key={c.id}
                   className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition"
                 >
                   <div className="flex justify-between items-start mb-4">
@@ -343,15 +380,13 @@ export default function IDGuardWebsite() {
                         <Users className="w-6 h-6 text-blue-600" />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold">{contact.name}</h3>
-                        <p className="text-sm text-gray-500">
-                          {contact.relation}
-                        </p>
+                        <h3 className="text-xl font-bold">{c.name}</h3>
+                        <p className="text-sm text-gray-500">{c.relation}</p>
                       </div>
                     </div>
 
                     <button
-                      onClick={() => handleDeleteContact(contact.id)}
+                      onClick={() => handleDeleteContact(c.id)}
                       className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition"
                     >
                       <X className="w-5 h-5" />
@@ -360,7 +395,7 @@ export default function IDGuardWebsite() {
 
                   <div className="flex items-center space-x-2 text-gray-600">
                     <Phone className="w-4 h-4" />
-                    <span>{contact.phone}</span>
+                    <span>{c.phone}</span>
                   </div>
                 </div>
               ))}
@@ -572,7 +607,7 @@ export default function IDGuardWebsite() {
               <button
                 onClick={() => {
                   alert(
-                    "Live data comes from Blynk Cloud.\nV2 = RFID\nV3 = Location"
+                    "Live data comes from Blynk Cloud.\nV2 = RFID\nV3 = Location\nV4 = SOS alert"
                   );
                 }}
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg"
@@ -584,7 +619,7 @@ export default function IDGuardWebsite() {
         )}
       </main>
 
-      {/* Footer */}
+      {/* ------------ FOOTER ------------- */}
       <footer className="bg-gray-800 text-white mt-16 py-8">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="flex items-center justify-center space-x-2 mb-4">
