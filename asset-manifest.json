@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/idguardapp/static/css/main.1852f896.css",
-    "main.js": "/idguardapp/static/js/main.92c6bc64.js",
+    "main.css": "/idguardapp/static/css/main.89ab2ae8.css",
+    "main.js": "/idguardapp/static/js/main.2891c9a6.js",
     "static/js/453.6bc2661e.chunk.js": "/idguardapp/static/js/453.6bc2661e.chunk.js",
     "index.html": "/idguardapp/index.html",
-    "main.1852f896.css.map": "/idguardapp/static/css/main.1852f896.css.map",
-    "main.92c6bc64.js.map": "/idguardapp/static/js/main.92c6bc64.js.map",
+    "main.89ab2ae8.css.map": "/idguardapp/static/css/main.89ab2ae8.css.map",
+    "main.2891c9a6.js.map": "/idguardapp/static/js/main.2891c9a6.js.map",
     "453.6bc2661e.chunk.js.map": "/idguardapp/static/js/453.6bc2661e.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.1852f896.css",
-    "static/js/main.92c6bc64.js"
+    "static/css/main.89ab2ae8.css",
+    "static/js/main.2891c9a6.js"
   ]
 }
